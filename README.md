@@ -1,4 +1,4 @@
-# SAM Web Annotator
+# SegmentIt
 
 Browser-based image annotation tool for instance segmentation with SAM (Segment Anything) or YOLO-seg models.
 
