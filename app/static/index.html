@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAM Annotator</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="bg-shape bg-shape-a"></div>
+  <div class="bg-shape bg-shape-b"></div>
+  <div class="layout">
+    <aside class="panel panel-left">
+      <h1>SegmentIt</h1>
+      <p class="subtitle">Interactive segmentation and fast mask labeling.</p>
+
+      <div class="section-title">Data source</div>
+
+      <label class="input-group">
+        <span>Dataset directory</span>
+        <div class="path-row">
+          <input id="datasetDirInput" type="text" placeholder="C:\datasets\project">
+          <button id="browseDatasetBtn" class="btn">Browse</button>
+        </div>
+      </label>
+
+      <label class="input-group">
+        <span>Video (MP4/AVI/MOV)</span>
+        <div class="path-row">
+          <input id="videoPathInput" type="text" placeholder="C:\videos\sample.mp4">
+          <button id="browseVideoBtn" class="btn">Browse</button>
+        </div>
+      </label>
+
+      <div class="button-row">
+        <label class="input-group small">
+          <span>Frame stride</span>
+          <input id="videoStrideInput" type="number" min="1" step="1" value="1">
+        </label>
+        <label class="input-group small">
+          <span>Max frames</span>
+          <input id="videoMaxFramesInput" type="number" min="1" step="1" placeholder="all">
+        </label>
+      </div>
+
+      <label class="input-group">
+        <span>Segmentation model path (optional)</span>
+        <div class="path-row">
+          <input id="modelPathInput" type="text" placeholder="C:\models\best.pt">
+          <button id="browseModelBtn" class="btn">Browse</button>
+        </div>
+      </label>
+
+      <label class="input-group">
+        <span>SAM 2 config YAML (optional)</span>
+        <div class="path-row">
+          <input id="sam2ConfigInput" type="text" placeholder="C:\models\sam2.1_hiera_l.yaml">
+          <button id="browseSam2ConfigBtn" class="btn">Browse</button>
+        </div>
+      </label>
+
+      <label class="input-group">
+        <span>Segmentation engine</span>
+        <select id="engineSelect">
+          <option value="sam">Segment Anything (SAM)</option>
+          <option value="sam2">Segment Anything 2 (SAM 2)</option>
+          <option value="yolo">YOLO Seg</option>
+        </select>
+      </label>
+
+      <label class="input-group">
+        <span>SAM model type (vit_h / vit_l / vit_b)</span>
+        <input id="samModelTypeInput" type="text" value="vit_h" placeholder="vit_h">
+      </label>
+
+      <details class="advanced">
+        <summary>Auto segmentation (SAM settings)</summary>
+        <div class="advanced-grid">
+          <label class="input-group small">
+            <span>Points per side</span>
+            <input id="pointsPerSideInput" type="number" min="4" step="1" value="32">
+          </label>
+          <label class="input-group small">
+            <span>Points per batch</span>
+            <input id="pointsPerBatchInput" type="number" min="1" step="1" value="64">
+          </label>
+          <label class="input-group small">
+            <span>Pred IoU thresh</span>
+            <input id="predIouThreshInput" type="number" min="0" max="1" step="0.01" value="0.8">
+          </label>
+          <label class="input-group small">
+            <span>Stability thresh</span>
+            <input id="stabilityScoreThreshInput" type="number" min="0" max="1" step="0.01" value="0.95">
+          </label>
+          <label class="input-group small">
+            <span>Stability offset</span>
+            <input id="stabilityScoreOffsetInput" type="number" min="0" max="3" step="0.05" value="1.0">
+          </label>
+          <label class="input-group small">
+            <span>Box NMS</span>
+            <input id="boxNmsThreshInput" type="number" min="0" max="1" step="0.01" value="0.7">
+          </label>
+          <label class="input-group small">
+            <span>Crop layers</span>
+            <input id="cropNLayersInput" type="number" min="0" max="6" step="1" value="0">
+          </label>
+          <label class="input-group small">
+            <span>Crop NMS</span>
+            <input id="cropNmsThreshInput" type="number" min="0" max="1" step="0.01" value="0.7">
+          </label>
+          <label class="input-group small">
+            <span>Crop overlap</span>
+            <input id="cropOverlapRatioInput" type="number" min="0" max="1" step="0.01" value="0.34">
+          </label>
+          <label class="input-group small">
+            <span>Crop points scale</span>
+            <input id="cropNPointsDownscaleInput" type="number" min="1" max="8" step="1" value="1">
+          </label>
+        </div>
+        <label class="checkbox-group">
+          <input id="mergeSameClassInput" type="checkbox">
+          <span>Merge same class masks</span>
+        </label>
+      </details>
+
+      <label class="input-group">
+        <span>Labels output directory (optional)</span>
+        <div class="path-row">
+          <input id="labelsDirInput" type="text" placeholder="C:\datasets\labels">
+          <button id="browseLabelsBtn" class="btn">Browse</button>
+        </div>
+      </label>
+
+      <label class="input-group">
+        <span>Classes YAML/TXT file (optional)</span>
+        <div class="path-row">
+          <input id="classesFileInput" type="text" placeholder="C:\datasets\data.yaml">
+          <button id="browseClassesBtn" class="btn">Browse</button>
+        </div>
+      </label>
+
+      <label class="input-group">
+        <span>Classes (one per line)</span>
+        <textarea id="classesInput" rows="7" placeholder="person&#10;car&#10;traffic_light"></textarea>
+      </label>
+
+      <button id="loadSessionBtn" class="btn btn-primary">Load</button>
+      <div id="videoInfo" class="hint">Video not loaded.</div>
+
+      <div class="hint">Tip: set either a dataset folder or a video path, then click Load. For SAM2, a model path is required.</div>
+
+      <div class="hint">
+        <div>Controls:</div>
+        <div>Left click: select mask</div>
+        <div>Shift/Alt + left click: negative point</div>
+        <div>Middle click: pan</div>
+        <div>Add vertex: <code>Ctrl</code> + click on edge</div>
+        <div>Draw: press <code>N</code>, add points, <code>Enter</code> to finish</div>
+        <div>Delete: <code>Del</code> or the Delete mask button</div>
+      </div>
+    </aside>
+
+    <main class="panel panel-main">
+      <div class="toolbar">
+        <div class="toolbar-nav-group">
+          <button id="prevBtn" class="btn">Prev</button>
+          <button id="nextBtn" class="btn">Next</button>
+          <button id="nextUnlabeledBtn" class="btn jump-unlabeled-btn">Next unlabeled</button>
+        </div>
+        <select id="imageSelect" class="select-grow"></select>
+        <span id="imageCounter" class="counter">0 / 0</span>
+      </div>
+
+      <div class="toolbar toolbar-secondary">
+        <div class="toolbar-secondary-left">
+          <button id="predictBtn" class="btn">Auto segment</button>
+          <button id="saveBtn" class="btn btn-primary">Save</button>
+          <button id="saveAllBtn" class="btn btn-primary">Save all</button>
+          <label class="input-group small inline-compact">
+            <span>Conf (YOLO)</span>
+            <input id="confInput" type="number" min="0" max="1" step="0.01" value="0.25">
+          </label>
+          <label class="input-group small inline-compact">
+            <span>Min area</span>
+            <input id="minAreaInput" type="number" min="0" step="10" value="200">
+          </label>
+        </div>
+        <div class="toolbar-secondary-right">
+          <button id="zoomOutBtn" class="btn">-</button>
+          <button id="zoomInBtn" class="btn">+</button>
+          <button id="zoomFitBtn" class="btn">Fit</button>
+          <span id="zoomLabel" class="counter">100%</span>
+        </div>
+      </div>
+
+      <div class="canvas-wrap" id="canvasWrap">
+        <canvas id="annotCanvas" tabindex="0"></canvas>
+      </div>
+
+      <div id="statusBar" class="status">Ready.</div>
+    </main>
+
+    <aside class="panel panel-right">
+      <h2>Masks</h2>
+
+      <label class="input-group">
+        <span>Class for segmentation/drawing</span>
+        <select id="classSelect"></select>
+      </label>
+
+      <div class="section-title">Points (SAM2)</div>
+
+      <div class="button-row">
+        <button id="pointModeBtn" class="btn">Point mode</button>
+        <button id="clearPointsBtn" class="btn">Clear points</button>
+      </div>
+
+      <div class="button-row">
+        <button id="segmentPointsBtn" class="btn btn-primary">Segment from points</button>
+        <button id="propagateVideoBtn" class="btn">Propagate video</button>
+      </div>
+
+      <label class="checkbox-group">
+        <input id="refinePointsInput" type="checkbox" checked>
+        <span>Refine selected mask (keep points)</span>
+      </label>
+
+      <label class="checkbox-group">
+        <input id="mergeContoursInput" type="checkbox" checked>
+        <span>Merge contours into single mask</span>
+      </label>
+
+      <label class="checkbox-group">
+        <input id="seedMaskForPropagateInput" type="checkbox" checked>
+        <span>Use current mask for propagation</span>
+      </label>
+
+      <label class="checkbox-group">
+        <input id="carryPrevMaskInput" type="checkbox">
+        <span>Copy masks from previous frame</span>
+      </label>
+
+      <div class="hint">
+        <div>Shift/Alt: negative point</div>
+        <div><code>Enter</code> ? segment, <code>Backspace</code> ? remove last point</div>
+      </div>
+
+      <div class="button-row">
+        <button id="deleteBtn" class="btn btn-danger">Delete mask</button>
+        <button id="clearBtn" class="btn">Clear masks</button>
+      </div>
+
+      <div class="box-list-wrap">
+        <div class="box-list-title">Masks</div>
+        <ul id="boxList" class="box-list"></ul>
+      </div>
+
+      <div class="button-row">
+        <button id="removeUncheckedBtn" class="btn">Remove unchecked</button>
+        <button id="checkAllBtn" class="btn">Check all</button>
+      </div>
+
+      <div class="hint hotkeys">
+        <div><strong>Hotkeys</strong></div>
+        <div><code>Ctrl+S</code> ? save</div>
+        <div><code>Ctrl+Shift+S</code> ? save all</div>
+        <div><code>P</code> ? auto segment</div>
+        <div><code>N</code> ? draw mask</div>
+        <div><code>T</code> ? point mode</div>
+        <div><code>Ctrl</code> + click edge ? insert vertex</div>
+        <div><code>Left/Right</code> ? prev/next</div>
+        <div><code>Ctrl+Z</code> ? undo</div>
+        <div><code>+ / -</code> ? zoom</div>
+        <div><code>0</code> ? fit</div>
+      </div>
+    </aside>
+  </div>
+
+  <div id="pickerModal" class="picker-modal hidden">
+    <div class="picker-window">
+      <div class="picker-header">
+        <div id="pickerTitle" class="picker-title">Select path</div>
+        <button id="pickerCloseBtn" class="btn">Close</button>
+      </div>
+      <div class="picker-controls">
+        <button id="pickerRootsBtn" class="btn">Roots</button>
+        <button id="pickerUpBtn" class="btn">Up</button>
+        <button id="pickerSelectCurrentBtn" class="btn btn-primary">Select current folder</button>
+      </div>
+      <div id="pickerPath" class="picker-path"></div>
+      <ul id="pickerList" class="picker-list"></ul>
+    </div>
+  </div>
+
+  <script src="/static/app.js" defer></script>
+</body>
+</html>

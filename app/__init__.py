@@ -1,0 +1,1 @@
+"""SAM web annotator package."""
