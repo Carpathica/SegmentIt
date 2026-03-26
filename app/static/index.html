@@ -11,56 +11,64 @@
   <div class="bg-shape bg-shape-b"></div>
   <div class="layout">
     <aside class="panel panel-left">
-      <h1>SegmentIt</h1>
-      <p class="subtitle">Interactive segmentation and fast mask labeling.</p>
-
-      <div class="section-title">Data source</div>
+      <h1 data-i18n="app.brand">SegmentIt</h1>
+      <p class="subtitle" data-i18n="app.subtitle">Interactive segmentation and fast mask labeling.</p>
 
       <label class="input-group">
-        <span>Dataset directory</span>
+        <span data-i18n="lang.label">Language</span>
+        <select id="languageSelect">
+          <option value="en" data-i18n="lang.en">English</option>
+          <option value="ru" data-i18n="lang.ru">Русский</option>
+        </select>
+      </label>
+
+      <div class="section-title" data-i18n="left.section.data_source">Data source</div>
+
+      <label class="input-group">
+        <span data-i18n="left.label.dataset_dir">Dataset directory</span>
         <div class="path-row">
           <input id="datasetDirInput" type="text" placeholder="C:\datasets\project">
-          <button id="browseDatasetBtn" class="btn">Browse</button>
+          <button id="browseDatasetBtn" class="btn" data-i18n="common.browse">Browse</button>
         </div>
       </label>
 
       <label class="input-group">
-        <span>Video (MP4/AVI/MOV)</span>
+        <span data-i18n="left.label.video_path">Video (MP4/AVI/MOV)</span>
         <div class="path-row">
           <input id="videoPathInput" type="text" placeholder="C:\videos\sample.mp4">
-          <button id="browseVideoBtn" class="btn">Browse</button>
+          <button id="browseVideoBtn" class="btn" data-i18n="common.browse">Browse</button>
         </div>
       </label>
 
       <div class="button-row">
         <label class="input-group small">
-          <span>Frame stride</span>
+          <span data-i18n="left.label.frame_stride">Frame stride</span>
           <input id="videoStrideInput" type="number" min="1" step="1" value="1">
         </label>
         <label class="input-group small">
-          <span>Max frames</span>
+          <span data-i18n="left.label.max_frames">Max frames</span>
           <input id="videoMaxFramesInput" type="number" min="1" step="1" placeholder="all">
         </label>
       </div>
 
       <label class="input-group">
-        <span>Segmentation model path (optional)</span>
+        <span data-i18n="left.label.model_path">Segmentation model path (optional)</span>
         <div class="path-row">
           <input id="modelPathInput" type="text" placeholder="C:\models\best.pt">
-          <button id="browseModelBtn" class="btn">Browse</button>
+          <button id="browseModelBtn" class="btn" data-i18n="common.browse">Browse</button>
         </div>
       </label>
 
       <label class="input-group">
-        <span>SAM 2 config YAML (optional)</span>
+        <span data-i18n="left.label.sam2_config">SAM 2 config YAML (optional)</span>
         <div class="path-row">
           <input id="sam2ConfigInput" type="text" placeholder="C:\models\sam2.1_hiera_l.yaml">
-          <button id="browseSam2ConfigBtn" class="btn">Browse</button>
+          <button id="browseSam2ConfigBtn" class="btn" data-i18n="common.browse">Browse</button>
         </div>
       </label>
 
       <label class="input-group">
-        <span>Segmentation engine</span>
+        <span data-i18n="left.label.engine">Segmentation engine</span>
         <select id="engineSelect">
           <option value="sam">Segment Anything (SAM)</option>
           <option value="sam2">Segment Anything 2 (SAM 2)</option>
@@ -69,103 +77,103 @@
       </label>
 
       <label class="input-group">
-        <span>SAM model type (vit_h / vit_l / vit_b)</span>
+        <span data-i18n="left.label.sam_model_type">SAM model type (vit_h / vit_l / vit_b)</span>
         <input id="samModelTypeInput" type="text" value="vit_h" placeholder="vit_h">
       </label>
 
       <details class="advanced">
-        <summary>Auto segmentation (SAM settings)</summary>
+        <summary data-i18n="left.advanced.summary">Auto segmentation (SAM settings)</summary>
         <div class="advanced-grid">
           <label class="input-group small">
-            <span>Points per side</span>
+            <span data-i18n="left.advanced.points_per_side">Points per side</span>
             <input id="pointsPerSideInput" type="number" min="4" step="1" value="32">
           </label>
           <label class="input-group small">
-            <span>Points per batch</span>
+            <span data-i18n="left.advanced.points_per_batch">Points per batch</span>
             <input id="pointsPerBatchInput" type="number" min="1" step="1" value="64">
           </label>
           <label class="input-group small">
-            <span>Pred IoU thresh</span>
+            <span data-i18n="left.advanced.pred_iou_thresh">Pred IoU thresh</span>
             <input id="predIouThreshInput" type="number" min="0" max="1" step="0.01" value="0.8">
           </label>
           <label class="input-group small">
-            <span>Stability thresh</span>
+            <span data-i18n="left.advanced.stability_thresh">Stability thresh</span>
             <input id="stabilityScoreThreshInput" type="number" min="0" max="1" step="0.01" value="0.95">
           </label>
           <label class="input-group small">
-            <span>Stability offset</span>
+            <span data-i18n="left.advanced.stability_offset">Stability offset</span>
             <input id="stabilityScoreOffsetInput" type="number" min="0" max="3" step="0.05" value="1.0">
           </label>
           <label class="input-group small">
-            <span>Box NMS</span>
+            <span data-i18n="left.advanced.box_nms">Box NMS</span>
             <input id="boxNmsThreshInput" type="number" min="0" max="1" step="0.01" value="0.7">
           </label>
           <label class="input-group small">
-            <span>Crop layers</span>
+            <span data-i18n="left.advanced.crop_layers">Crop layers</span>
             <input id="cropNLayersInput" type="number" min="0" max="6" step="1" value="0">
           </label>
           <label class="input-group small">
-            <span>Crop NMS</span>
+            <span data-i18n="left.advanced.crop_nms">Crop NMS</span>
             <input id="cropNmsThreshInput" type="number" min="0" max="1" step="0.01" value="0.7">
           </label>
           <label class="input-group small">
-            <span>Crop overlap</span>
+            <span data-i18n="left.advanced.crop_overlap">Crop overlap</span>
             <input id="cropOverlapRatioInput" type="number" min="0" max="1" step="0.01" value="0.34">
           </label>
           <label class="input-group small">
-            <span>Crop points scale</span>
+            <span data-i18n="left.advanced.crop_points_scale">Crop points scale</span>
             <input id="cropNPointsDownscaleInput" type="number" min="1" max="8" step="1" value="1">
           </label>
         </div>
         <label class="checkbox-group">
           <input id="mergeSameClassInput" type="checkbox">
-          <span>Merge same class masks</span>
+          <span data-i18n="left.advanced.merge_same_class">Merge same class masks</span>
         </label>
       </details>
 
       <label class="input-group">
-        <span>Labels output directory (optional)</span>
+        <span data-i18n="left.label.labels_dir">Labels output directory (optional)</span>
         <div class="path-row">
           <input id="labelsDirInput" type="text" placeholder="C:\datasets\labels">
-          <button id="browseLabelsBtn" class="btn">Browse</button>
+          <button id="browseLabelsBtn" class="btn" data-i18n="common.browse">Browse</button>
         </div>
       </label>
 
       <label class="input-group">
-        <span>Classes YAML/TXT file (optional)</span>
+        <span data-i18n="left.label.classes_file">Classes YAML/TXT file (optional)</span>
         <div class="path-row">
           <input id="classesFileInput" type="text" placeholder="C:\datasets\data.yaml">
-          <button id="browseClassesBtn" class="btn">Browse</button>
+          <button id="browseClassesBtn" class="btn" data-i18n="common.browse">Browse</button>
         </div>
       </label>
 
       <label class="input-group">
-        <span>Classes (one per line)</span>
+        <span data-i18n="left.label.classes">Classes (one per line)</span>
         <textarea id="classesInput" rows="7" placeholder="person&#10;car&#10;traffic_light"></textarea>
       </label>
 
-      <button id="loadSessionBtn" class="btn btn-primary">Load</button>
-      <div id="videoInfo" class="hint">Video not loaded.</div>
+      <button id="loadSessionBtn" class="btn btn-primary" data-i18n="left.button.load">Load</button>
+      <div id="videoInfo" class="hint" data-i18n="left.video_info.not_loaded">Video not loaded.</div>
 
-      <div class="hint">Tip: set either a dataset folder or a video path, then click Load. For SAM2, a model path is required.</div>
+      <div class="hint" data-i18n="left.hint.tip">Tip: set either a dataset folder or a video path, then click Load. For SAM2, a model path is required.</div>
 
       <div class="hint">
-        <div>Controls:</div>
-        <div>Left click: select mask</div>
-        <div>Shift/Alt + left click: negative point</div>
-        <div>Middle click: pan</div>
-        <div>Add vertex: <code>Ctrl</code> + click on edge</div>
-        <div>Draw: press <code>N</code>, add points, <code>Enter</code> to finish</div>
-        <div>Delete: <code>Del</code> or the Delete mask button</div>
+        <div data-i18n="left.controls.title">Controls:</div>
+        <div data-i18n="left.controls.select">Left click: select mask</div>
+        <div data-i18n="left.controls.negative_point">Shift/Alt + left click: negative point</div>
+        <div data-i18n="left.controls.pan">Middle click: pan</div>
+        <div data-i18n-html="left.controls.add_vertex">Add vertex: <code>Ctrl</code> + click on edge</div>
+        <div data-i18n-html="left.controls.draw">Draw: press <code>N</code>, add points, <code>Enter</code> to finish</div>
+        <div data-i18n-html="left.controls.delete">Delete: <code>Del</code> or the Delete mask button</div>
       </div>
     </aside>
 
     <main class="panel panel-main">
       <div class="toolbar">
         <div class="toolbar-nav-group">
-          <button id="prevBtn" class="btn">Prev</button>
-          <button id="nextBtn" class="btn">Next</button>
-          <button id="nextUnlabeledBtn" class="btn jump-unlabeled-btn">Next unlabeled</button>
+          <button id="prevBtn" class="btn" data-i18n="main.nav.prev">Prev</button>
+          <button id="nextBtn" class="btn" data-i18n="main.nav.next">Next</button>
+          <button id="nextUnlabeledBtn" class="btn jump-unlabeled-btn" data-i18n="main.nav.next_unlabeled">Next unlabeled</button>
         </div>
         <select id="imageSelect" class="select-grow"></select>
         <span id="imageCounter" class="counter">0 / 0</span>
@@ -173,22 +181,22 @@
 
       <div class="toolbar toolbar-secondary">
         <div class="toolbar-secondary-left">
-          <button id="predictBtn" class="btn">Auto segment</button>
-          <button id="saveBtn" class="btn btn-primary">Save</button>
-          <button id="saveAllBtn" class="btn btn-primary">Save all</button>
+          <button id="predictBtn" class="btn" data-i18n="main.actions.auto_segment">Auto segment</button>
+          <button id="saveBtn" class="btn btn-primary" data-i18n="main.actions.save">Save</button>
+          <button id="saveAllBtn" class="btn btn-primary" data-i18n="main.actions.save_all">Save all</button>
           <label class="input-group small inline-compact">
-            <span>Conf (YOLO)</span>
+            <span data-i18n="main.label.conf">Conf (YOLO)</span>
             <input id="confInput" type="number" min="0" max="1" step="0.01" value="0.25">
           </label>
           <label class="input-group small inline-compact">
-            <span>Min area</span>
+            <span data-i18n="main.label.min_area">Min area</span>
             <input id="minAreaInput" type="number" min="0" step="10" value="200">
           </label>
         </div>
         <div class="toolbar-secondary-right">
           <button id="zoomOutBtn" class="btn">-</button>
           <button id="zoomInBtn" class="btn">+</button>
-          <button id="zoomFitBtn" class="btn">Fit</button>
+          <button id="zoomFitBtn" class="btn" data-i18n="main.zoom.fit">Fit</button>
           <span id="zoomLabel" class="counter">100%</span>
         </div>
       </div>
@@ -197,81 +205,81 @@
         <canvas id="annotCanvas" tabindex="0"></canvas>
       </div>
 
-      <div id="statusBar" class="status">Ready.</div>
+      <div id="statusBar" class="status" data-i18n="status.ready">Ready.</div>
     </main>
 
     <aside class="panel panel-right">
-      <h2>Masks</h2>
+      <h2 data-i18n="right.title">Masks</h2>
 
       <label class="input-group">
-        <span>Class for segmentation/drawing</span>
+        <span data-i18n="right.label.class">Class for segmentation/drawing</span>
         <select id="classSelect"></select>
       </label>
 
-      <div class="section-title">Points (SAM2)</div>
+      <div class="section-title" data-i18n="right.section.points">Points (SAM2)</div>
 
       <div class="button-row">
-        <button id="pointModeBtn" class="btn">Point mode</button>
-        <button id="clearPointsBtn" class="btn">Clear points</button>
+        <button id="pointModeBtn" class="btn" data-i18n="right.button.point_mode">Point mode</button>
+        <button id="clearPointsBtn" class="btn" data-i18n="right.button.clear_points">Clear points</button>
       </div>
 
       <div class="button-row">
-        <button id="segmentPointsBtn" class="btn btn-primary">Segment from points</button>
-        <button id="propagateVideoBtn" class="btn">Propagate video</button>
+        <button id="segmentPointsBtn" class="btn btn-primary" data-i18n="right.button.segment_points">Segment from points</button>
+        <button id="propagateVideoBtn" class="btn" data-i18n="right.button.propagate_video">Propagate video</button>
       </div>
 
       <label class="checkbox-group">
         <input id="refinePointsInput" type="checkbox" checked>
-        <span>Refine selected mask (keep points)</span>
+        <span data-i18n="right.checkbox.refine">Refine selected mask (keep points)</span>
       </label>
 
       <label class="checkbox-group">
         <input id="mergeContoursInput" type="checkbox" checked>
-        <span>Merge contours into single mask</span>
+        <span data-i18n="right.checkbox.merge_contours">Merge contours into single mask</span>
       </label>
 
       <label class="checkbox-group">
         <input id="seedMaskForPropagateInput" type="checkbox" checked>
-        <span>Use current mask for propagation</span>
+        <span data-i18n="right.checkbox.seed_mask">Use current mask for propagation</span>
       </label>
 
       <label class="checkbox-group">
         <input id="carryPrevMaskInput" type="checkbox">
-        <span>Copy masks from previous frame</span>
+        <span data-i18n="right.checkbox.copy_prev">Copy masks from previous frame</span>
       </label>
 
       <div class="hint">
-        <div>Shift/Alt: negative point</div>
-        <div><code>Enter</code> ? segment, <code>Backspace</code> ? remove last point</div>
+        <div data-i18n="right.hint.negative_point">Shift/Alt: negative point</div>
+        <div data-i18n-html="right.hint.enter_backspace"><code>Enter</code> &mdash; segment, <code>Backspace</code> &mdash; remove last point</div>
       </div>
 
       <div class="button-row">
-        <button id="deleteBtn" class="btn btn-danger">Delete mask</button>
-        <button id="clearBtn" class="btn">Clear masks</button>
+        <button id="deleteBtn" class="btn btn-danger" data-i18n="right.button.delete_mask">Delete mask</button>
+        <button id="clearBtn" class="btn" data-i18n="right.button.clear_masks">Clear masks</button>
       </div>
 
       <div class="box-list-wrap">
-        <div class="box-list-title">Masks</div>
+        <div class="box-list-title" data-i18n="right.box_list_title">Masks</div>
         <ul id="boxList" class="box-list"></ul>
       </div>
 
       <div class="button-row">
-        <button id="removeUncheckedBtn" class="btn">Remove unchecked</button>
-        <button id="checkAllBtn" class="btn">Check all</button>
+        <button id="removeUncheckedBtn" class="btn" data-i18n="right.button.remove_unchecked">Remove unchecked</button>
+        <button id="checkAllBtn" class="btn" data-i18n="right.button.check_all">Check all</button>
       </div>
 
       <div class="hint hotkeys">
-        <div><strong>Hotkeys</strong></div>
-        <div><code>Ctrl+S</code> ? save</div>
-        <div><code>Ctrl+Shift+S</code> ? save all</div>
-        <div><code>P</code> ? auto segment</div>
-        <div><code>N</code> ? draw mask</div>
-        <div><code>T</code> ? point mode</div>
-        <div><code>Ctrl</code> + click edge ? insert vertex</div>
-        <div><code>Left/Right</code> ? prev/next</div>
-        <div><code>Ctrl+Z</code> ? undo</div>
-        <div><code>+ / -</code> ? zoom</div>
-        <div><code>0</code> ? fit</div>
+        <div><strong data-i18n="right.hotkeys.title">Hotkeys</strong></div>
+        <div data-i18n-html="right.hotkeys.save"><code>Ctrl+S</code> &mdash; save</div>
+        <div data-i18n-html="right.hotkeys.save_all"><code>Ctrl+Shift+S</code> &mdash; save all</div>
+        <div data-i18n-html="right.hotkeys.auto"><code>P</code> &mdash; auto segment</div>
+        <div data-i18n-html="right.hotkeys.draw"><code>N</code> &mdash; draw mask</div>
+        <div data-i18n-html="right.hotkeys.point_mode"><code>T</code> &mdash; point mode</div>
+        <div data-i18n-html="right.hotkeys.insert_vertex"><code>Ctrl</code> + click edge &mdash; insert vertex</div>
+        <div data-i18n-html="right.hotkeys.nav"><code>Left/Right</code> &mdash; prev/next</div>
+        <div data-i18n-html="right.hotkeys.undo"><code>Ctrl+Z</code> &mdash; undo</div>
+        <div data-i18n-html="right.hotkeys.zoom"><code>+ / -</code> &mdash; zoom</div>
+        <div data-i18n-html="right.hotkeys.fit"><code>0</code> &mdash; fit</div>
       </div>
     </aside>
   </div>
@@ -279,13 +287,13 @@
   <div id="pickerModal" class="picker-modal hidden">
     <div class="picker-window">
       <div class="picker-header">
-        <div id="pickerTitle" class="picker-title">Select path</div>
-        <button id="pickerCloseBtn" class="btn">Close</button>
+        <div id="pickerTitle" class="picker-title" data-i18n="picker.title">Select path</div>
+        <button id="pickerCloseBtn" class="btn" data-i18n="picker.close">Close</button>
       </div>
       <div class="picker-controls">
-        <button id="pickerRootsBtn" class="btn">Roots</button>
-        <button id="pickerUpBtn" class="btn">Up</button>
-        <button id="pickerSelectCurrentBtn" class="btn btn-primary">Select current folder</button>
+        <button id="pickerRootsBtn" class="btn" data-i18n="picker.roots">Roots</button>
+        <button id="pickerUpBtn" class="btn" data-i18n="picker.up">Up</button>
+        <button id="pickerSelectCurrentBtn" class="btn btn-primary" data-i18n="picker.select_current">Select current folder</button>
       </div>
       <div id="pickerPath" class="picker-path"></div>
       <ul id="pickerList" class="picker-list"></ul>

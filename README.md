@@ -6,6 +6,7 @@ Browser-based image annotation tool for instance segmentation with SAM (Segment 
 
 - Load local dataset folder.
 - Load a segmentation model (SAM checkpoints or YOLO-seg `.pt/.onnx`).
+- UI language switch (English/Russian).
 - Auto-segment all objects in the image.
 - SAM 2 point prompts (positive/negative clicks) for single-object segmentation.
 - Video support (frame extraction, point prompts, optional propagation).
@@ -90,7 +91,7 @@ Open `http://127.0.0.1:8000`.
 2. Optionally set model path.
 3. Optionally set classes YAML/TXT or classes list.
 4. Optionally set output labels folder.
-5. Click `Load Dataset`.
+5. Click `Load`.
 6. Choose segmentation engine and model path (for SAM 2 also set config YAML).
 7. Use `Auto-segment`, keep needed masks, edit, then `Save` or `Save All`.
 

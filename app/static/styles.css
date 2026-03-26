@@ -393,6 +393,10 @@ textarea {
 .panel-right .button-row + .box-list-wrap {
   margin-top: 12px;
 }
+
+.panel-right .box-list-wrap + .button-row {
+  margin-top: 12px;
+}
 .box-list-wrap {
   border: 1px solid #d7e2cf;
   border-radius: 12px;

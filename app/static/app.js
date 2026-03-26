@@ -13,6 +13,7 @@ const el = {
   carryPrevMaskInput: document.getElementById("carryPrevMaskInput"),
   browseVideoBtn: document.getElementById("browseVideoBtn"),
   videoInfo: document.getElementById("videoInfo"),
+  languageSelect: document.getElementById("languageSelect"),
   engineSelect: document.getElementById("engineSelect"),
   samModelTypeInput: document.getElementById("samModelTypeInput"),
   loadSessionBtn: document.getElementById("loadSessionBtn"),
@@ -75,16 +76,17 @@ const el = {
 const ctx = el.canvas.getContext("2d");
 
 const PICKER_CONFIG = {
-  dataset: { title: "Select dataset folder", mode: "dir", input: el.datasetDirInput, allowFolder: true },
-  model: { title: "Select model file", mode: "model", input: el.modelPathInput, allowFile: true },
-  sam2Config: { title: "Select SAM 2 YAML config", mode: "yaml", input: el.sam2ConfigInput, allowFile: true },
-  labels: { title: "Select labels folder", mode: "dir", input: el.labelsDirInput, allowFolder: true },
-  classes: { title: "Select classes YAML/TXT", mode: "yaml", input: el.classesFileInput, allowFile: true },
-  video: { title: "Select video file", mode: "video", input: el.videoPathInput, allowFile: true },
+  dataset: { titleKey: "picker.select_dataset", mode: "dir", input: el.datasetDirInput, allowFolder: true },
+  model: { titleKey: "picker.select_model", mode: "model", input: el.modelPathInput, allowFile: true },
+  sam2Config: { titleKey: "picker.select_sam2_yaml", mode: "yaml", input: el.sam2ConfigInput, allowFile: true },
+  labels: { titleKey: "picker.select_labels", mode: "dir", input: el.labelsDirInput, allowFolder: true },
+  classes: { titleKey: "picker.select_classes", mode: "yaml", input: el.classesFileInput, allowFile: true },
+  video: { titleKey: "picker.select_video", mode: "video", input: el.videoPathInput, allowFile: true },
 };
 
 const state = {
   sessionLoaded: false,
+  lang: "en",
   images: [],
   imageIndex: -1,
   imagePath: "",
@@ -103,10 +105,420 @@ const state = {
   mode: "image",
   video: { active: false, info: null },
   view: { width: 0, height: 0, fitScale: 1, scale: 1, offsetX: 0, offsetY: 0, userZoom: 1, lastPointer: null },
-  picker: { target: null, currentPath: null, parentPath: null },
+  picker: { target: null, currentPath: null, parentPath: null, lastData: null },
   draw: { active: false, points: [], preview: null },
   points: { active: false, items: [] },
 };
+
+const LANG_STORAGE_KEY = "segmentit_ui_lang";
+
+const I18N = {
+  en: {
+    "app.title": "SegmentIt",
+    "app.brand": "SegmentIt",
+    "app.subtitle": "Interactive segmentation and fast mask labeling.",
+    "lang.label": "Language",
+    "lang.en": "English",
+    "lang.ru": "Russian",
+    "common.browse": "Browse",
+    "left.section.data_source": "Data source",
+    "left.label.dataset_dir": "Dataset directory",
+    "left.label.video_path": "Video (MP4/AVI/MOV)",
+    "left.label.frame_stride": "Frame stride",
+    "left.label.max_frames": "Max frames",
+    "left.label.model_path": "Segmentation model path (optional)",
+    "left.label.sam2_config": "SAM 2 config YAML (optional)",
+    "left.label.engine": "Segmentation engine",
+    "left.label.sam_model_type": "SAM model type (vit_h / vit_l / vit_b)",
+    "left.advanced.summary": "Auto segmentation (SAM settings)",
+    "left.advanced.points_per_side": "Points per side",
+    "left.advanced.points_per_batch": "Points per batch",
+    "left.advanced.pred_iou_thresh": "Pred IoU thresh",
+    "left.advanced.stability_thresh": "Stability thresh",
+    "left.advanced.stability_offset": "Stability offset",
+    "left.advanced.box_nms": "Box NMS",
+    "left.advanced.crop_layers": "Crop layers",
+    "left.advanced.crop_nms": "Crop NMS",
+    "left.advanced.crop_overlap": "Crop overlap",
+    "left.advanced.crop_points_scale": "Crop points scale",
+    "left.advanced.merge_same_class": "Merge same class masks",
+    "left.label.labels_dir": "Labels output directory (optional)",
+    "left.label.classes_file": "Classes YAML/TXT file (optional)",
+    "left.label.classes": "Classes (one per line)",
+    "left.button.load": "Load",
+    "left.video_info.not_loaded": "Video not loaded.",
+    "left.video_info.details": "Frames: {frameCount} | FPS: {fps} | {width}x{height} | stride {stride}",
+    "left.hint.tip":
+      "Tip: set either a dataset folder or a video path, then click Load. For SAM2, a model path is required.",
+    "left.controls.title": "Controls:",
+    "left.controls.select": "Left click: select mask",
+    "left.controls.negative_point": "Shift/Alt + left click: negative point",
+    "left.controls.pan": "Middle click: pan",
+    "left.controls.add_vertex": "Add vertex: <code>Ctrl</code> + click on edge",
+    "left.controls.draw": "Draw: press <code>N</code>, add points, <code>Enter</code> to finish",
+    "left.controls.delete": "Delete: <code>Del</code> or the Delete mask button",
+    "main.nav.prev": "Prev",
+    "main.nav.next": "Next",
+    "main.nav.next_unlabeled": "Next unlabeled",
+    "main.actions.auto_segment": "Auto segment",
+    "main.actions.save": "Save",
+    "main.actions.save_all": "Save all",
+    "main.label.conf": "Conf (YOLO)",
+    "main.label.min_area": "Min area",
+    "main.zoom.fit": "Fit",
+    "status.ready": "Ready.",
+    "right.title": "Masks",
+    "right.label.class": "Class for segmentation/drawing",
+    "right.section.points": "Points (SAM2)",
+    "right.button.point_mode": "Point mode",
+    "right.button.clear_points": "Clear points",
+    "right.button.segment_points": "Segment from points",
+    "right.button.propagate_video": "Propagate video",
+    "right.checkbox.refine": "Refine selected mask (keep points)",
+    "right.checkbox.merge_contours": "Merge contours into single mask",
+    "right.checkbox.seed_mask": "Use current mask for propagation",
+    "right.checkbox.copy_prev": "Copy masks from previous frame",
+    "right.hint.negative_point": "Shift/Alt: negative point",
+    "right.hint.enter_backspace": "<code>Enter</code> &mdash; segment, <code>Backspace</code> &mdash; remove last point",
+    "right.button.delete_mask": "Delete mask",
+    "right.button.clear_masks": "Clear masks",
+    "right.box_list_title": "Masks",
+    "right.button.remove_unchecked": "Remove unchecked",
+    "right.button.check_all": "Check all",
+    "right.hotkeys.title": "Hotkeys",
+    "right.hotkeys.save": "<code>Ctrl+S</code> &mdash; save",
+    "right.hotkeys.save_all": "<code>Ctrl+Shift+S</code> &mdash; save all",
+    "right.hotkeys.auto": "<code>P</code> &mdash; auto segment",
+    "right.hotkeys.draw": "<code>N</code> &mdash; draw mask",
+    "right.hotkeys.point_mode": "<code>T</code> &mdash; point mode",
+    "right.hotkeys.insert_vertex": "<code>Ctrl</code> + click edge &mdash; insert vertex",
+    "right.hotkeys.nav": "<code>Left/Right</code> &mdash; prev/next",
+    "right.hotkeys.undo": "<code>Ctrl+Z</code> &mdash; undo",
+    "right.hotkeys.zoom": "<code>+ / -</code> &mdash; zoom",
+    "right.hotkeys.fit": "<code>0</code> &mdash; fit",
+    "picker.title": "Select path",
+    "picker.close": "Close",
+    "picker.roots": "Roots",
+    "picker.up": "Up",
+    "picker.select_current": "Select current folder",
+    "picker.select_dataset": "Select dataset folder",
+    "picker.select_model": "Select model file",
+    "picker.select_sam2_yaml": "Select SAM 2 YAML config",
+    "picker.select_labels": "Select labels folder",
+    "picker.select_classes": "Select classes YAML/TXT",
+    "picker.select_video": "Select video file",
+    "picker.tag.dir": "DIR",
+    "picker.tag.file": "FILE",
+    "picker.empty": "No files",
+    "points.mode": "Point mode",
+    "points.mode_on": "Point mode: ON",
+    "segment.area": "Area {area} px",
+    "status.initial": "Set a dataset folder or a video path, then click Load.",
+    "status.current":
+      "{path} | {index}/{total} | masks: {count} (kept {kept}){dirty} | unsaved: {unsaved}{tail}",
+    "status.dirty_suffix": " (unsaved)",
+    "status.extra.cached": "cached",
+    "status.extra.copied_prev": "copied from previous frame",
+    "status.extra.loaded": "loaded",
+    "status.extra.saved_to": "Saved to {path}",
+    "status.extra.saved_counts": "Saved: {saved}, errors {errors}",
+    "status.point_mode_cleared": "Point mode: points cleared.",
+    "status.point_mode_help": "Point mode: LMB adds, RMB removes.",
+    "status.vertex_inserted": "Vertex inserted.",
+    "status.draw_mode_help": "Draw mode: click to add points; double click or Enter to finish.",
+    "status.undo_applied": "Undo applied.",
+    "status.undo_none": "Nothing to undo.",
+    "status.failed_load_roots": "Failed to load roots: {error}",
+    "status.failed_list_path": "Failed to list path: {error}",
+    "status.no_images_found": "No images found in the dataset.",
+    "status.both_dataset_and_video": "Both dataset and video are set. Loading video.",
+    "status.dataset_or_video_required": "Dataset folder or video path is required.",
+    "status.dataset_required": "Dataset path is required.",
+    "status.loading_dataset": "Loading dataset...",
+    "status.failed_load_dataset": "Failed to load dataset: {error}",
+    "status.video_path_required": "Video path is required.",
+    "status.extracting_frames": "Extracting frames from video...",
+    "status.video_loaded": "Video loaded. Use frames like images to annotate.",
+    "status.failed_load_video": "Failed to load video: {error}",
+    "status.loading_image": "Loading image...",
+    "status.failed_load_image": "Failed to load image: {error}",
+    "status.no_unlabeled_found": "No unlabeled images found.",
+    "status.no_image_selected": "No image selected.",
+    "status.running_auto_seg": "Running auto segmentation...",
+    "status.segmentation_complete": "Segmentation complete: masks {count}. Review the list.",
+    "status.segmentation_failed": "Segmentation failed: {error}",
+    "status.add_points_first": "Add some points first.",
+    "status.need_positive_point": "Add at least one positive point.",
+    "status.sam2_required_select": "SAM 2 is required. Select it in the segmentation settings.",
+    "status.sam2_yaml_required": "SAM 2 YAML config is required.",
+    "status.sam2_model_required": "SAM 2 model path is required.",
+    "status.segmenting_points": "Segmenting from points...",
+    "status.no_masks_returned": "No masks returned.",
+    "status.failed_choose_primary": "Failed to choose a primary mask to refine.",
+    "status.mask_updated_points": "Mask updated from points. Add more points to refine.",
+    "status.added_masks_points": "Added masks from points: {count}.",
+    "status.point_seg_failed": "Point segmentation failed: {error}",
+    "status.load_video_first": "Load a video first.",
+    "status.sam2_required": "SAM 2 is required.",
+    "status.sam2_yaml_required_prop": "SAM 2 YAML config is required for propagation.",
+    "status.sam2_model_required_prop": "SAM 2 model path is required for propagation.",
+    "status.propagating": "Propagating mask through video... this may take a while.",
+    "status.propagation_complete": "Propagation complete: saved {saved}, errors {errors}.",
+    "status.propagation_failed": "Propagation failed: {error}",
+    "status.saving": "Saving...",
+    "status.save_failed": "Save failed: {error}",
+    "status.nothing_to_save": "Nothing to save.",
+    "status.batch_saving": "Batch saving: {count}...",
+    "status.batch_save_failed": "Batch save failed: {error}",
+    "status.removed_unchecked_masks": "Removed unchecked masks: {count}.",
+    "status.no_mask_selected_delete": "No mask selected to delete.",
+    "error.invalid_response": "Invalid response: {text}",
+    "error.request_failed": "Request failed ({status})",
+    "error.failed_load_image": "Failed to load image.",
+  },
+  ru: {
+    "app.title": "SegmentIt",
+    "app.brand": "SegmentIt",
+    "app.subtitle": "Интерактивная сегментация и быстрая разметка масок.",
+    "lang.label": "Язык",
+    "lang.en": "Английский",
+    "lang.ru": "Русский",
+    "common.browse": "Обзор",
+    "left.section.data_source": "Загрузка данных",
+    "left.label.dataset_dir": "Папка с изображениями",
+    "left.label.video_path": "Видео (MP4/AVI/MOV)",
+    "left.label.frame_stride": "Шаг",
+    "left.label.max_frames": "Кол-во кадров",
+    "left.label.model_path": "Путь к модели сегментации",
+    "left.label.sam2_config": "YAML-конфиг SAM 2",
+    "left.label.engine": "Модель сегментатора",
+    "left.label.sam_model_type": "Тип модели SAM (vit_h / vit_l / vit_b)",
+    "left.advanced.summary": "Автосегментация (настройки гиперпараметров SAM)",
+    "left.advanced.points_per_side": "Точек на сторону",
+    "left.advanced.points_per_batch": "Точек в батче",
+    "left.advanced.pred_iou_thresh": "Порог IoU",
+    "left.advanced.stability_thresh": "Порог устойчивости",
+    "left.advanced.stability_offset": "Смещение устойчивости",
+    "left.advanced.box_nms": "NMS боксов",
+    "left.advanced.crop_layers": "Слои кропа",
+    "left.advanced.crop_nms": "NMS кропа",
+    "left.advanced.crop_overlap": "Перекрытие кропа",
+    "left.advanced.crop_points_scale": "Масштаб точек кропа",
+    "left.advanced.merge_same_class": "Объединять маски одного класса",
+    "left.label.labels_dir": "Папка для меток (опционально)",
+    "left.label.classes_file": "Файл классов YAML/TXT (опционально)",
+    "left.label.classes": "Классы (по одному в строке)",
+    "left.button.load": "Загрузить",
+    "left.video_info.not_loaded": "Видео не загружено.",
+    "left.video_info.details": "Кадры: {frameCount} | FPS: {fps} | {width}x{height} | шаг {stride}",
+    "left.hint.tip":
+      "Подсказка: укажите либо папку с изображениями, либо путь к видео и нажмите «Загрузить».",
+    "left.controls.title": "Управление:",
+    "left.controls.select": "ЛКМ: выбрать маску",
+    "left.controls.negative_point": "Shift/Alt + ЛКМ: отрицательная точка",
+    "left.controls.pan": "Колесо мыши: перемещение по изображению",
+    "left.controls.add_vertex": "Добавить вершину: <code>Ctrl</code> + клик по ребру",
+    "left.controls.draw": "Рисование: <code>N</code>, затем точки, <code>Enter</code> — завершить",
+    "left.controls.delete": "Удаление: <code>Del</code> или кнопка «Удалить маску»",
+    "main.nav.prev": "Назад",
+    "main.nav.next": "Вперед",
+    "main.nav.next_unlabeled": "Кадр без меток",
+    "main.actions.auto_segment": "Автосегментация",
+    "main.actions.save": "Сохранить",
+    "main.actions.save_all": "Сохранить все",
+    "main.label.conf": "Conf(YOLO)",
+    "main.label.min_area": "Мин. площадь",
+    "main.zoom.fit": "По умолчанию",
+    "status.ready": "Готово.",
+    "right.title": "Маски",
+    "right.label.class": "Класс для сегментации/рисования",
+    "right.section.points": "Точки (SAM2)",
+    "right.button.point_mode": "Режим точек",
+    "right.button.clear_points": "Очистить точки",
+    "right.button.segment_points": "Сегментация по точкам",
+    "right.button.propagate_video": "Распространить по видео",
+    "right.checkbox.refine": "Уточнять выбранную маску",
+    "right.checkbox.merge_contours": "Объединять контуры в одну маску",
+    "right.checkbox.seed_mask": "Якорная маска",
+    "right.checkbox.copy_prev": "Копировать маску далее",
+    "right.hint.negative_point": "Shift/Alt: отрицательная точка",
+    "right.hint.enter_backspace":
+      "<code>Enter</code> &mdash; сегментировать, <code>Backspace</code> &mdash; удалить последнюю точку",
+    "right.button.delete_mask": "Удалить маску",
+    "right.button.clear_masks": "Очистить маски",
+    "right.box_list_title": "Маски",
+    "right.button.remove_unchecked": "Удалить исключённые",
+    "right.button.check_all": "Отметить все",
+    "right.hotkeys.title": "Горячие клавиши",
+    "right.hotkeys.save": "<code>Ctrl+S</code> &mdash; сохранить",
+    "right.hotkeys.save_all": "<code>Ctrl+Shift+S</code> &mdash; сохранить все",
+    "right.hotkeys.auto": "<code>P</code> &mdash; автосегментация",
+    "right.hotkeys.draw": "<code>N</code> &mdash; рисование маски",
+    "right.hotkeys.point_mode": "<code>T</code> &mdash; режим точек",
+    "right.hotkeys.insert_vertex": "<code>Ctrl</code> + клик по ребру &mdash; добавить вершину",
+    "right.hotkeys.nav": "<code>Left/Right</code> &mdash; назад/вперед",
+    "right.hotkeys.undo": "<code>Ctrl+Z</code> &mdash; отмена",
+    "right.hotkeys.zoom": "<code>+ / -</code> &mdash; масштаб",
+    "right.hotkeys.fit": "<code>0</code> &mdash; по экрану",
+    "picker.title": "Выберите путь",
+    "picker.close": "Закрыть",
+    "picker.roots": "Корень",
+    "picker.up": "Вверх",
+    "picker.select_current": "Выбрать текущую папку",
+    "picker.select_dataset": "Выберите папку с изображениями",
+    "picker.select_model": "Выберите файл модели",
+    "picker.select_sam2_yaml": "Выберите YAML-конфиг SAM 2",
+    "picker.select_labels": "Выберите папку для меток",
+    "picker.select_classes": "Выберите файл классов YAML/TXT",
+    "picker.select_video": "Выберите видеофайл",
+    "picker.tag.dir": "ПАПКА",
+    "picker.tag.file": "ФАЙЛ",
+    "picker.empty": "Нет файлов",
+    "points.mode": "Режим точек",
+    "points.mode_on": "Режим точек: ВКЛ",
+    "segment.area": "Площадь {area} px",
+    "status.initial": "Укажите папку с изображениями или путь к видео и нажмите «Загрузить».",
+    "status.current":
+      "{path} | {index}/{total} | масок: {count} (оставлено {kept}){dirty} | несохранённых: {unsaved}{tail}",
+    "status.dirty_suffix": " (не сохранено)",
+    "status.extra.cached": "из кэша",
+    "status.extra.copied_prev": "скопировано с предыдущего кадра",
+    "status.extra.loaded": "загружено",
+    "status.extra.saved_to": "Сохранено в {path}",
+    "status.extra.saved_counts": "Сохранено: {saved}, ошибок {errors}",
+    "status.point_mode_cleared": "Режим точек: точки очищены.",
+    "status.point_mode_help": "Режим точек: ЛКМ добавляет, ПКМ удаляет.",
+    "status.vertex_inserted": "Добавлена вершина.",
+    "status.draw_mode_help": "Режим рисования: кликайте, чтобы ставить точки; двойной клик или Enter — завершить.",
+    "status.undo_applied": "Отмена выполнена.",
+    "status.undo_none": "Отменять нечего.",
+    "status.failed_load_roots": "Не удалось загрузить корни: {error}",
+    "status.failed_list_path": "Не удалось открыть папку: {error}",
+    "status.no_images_found": "В папке нет изображений.",
+    "status.both_dataset_and_video": "Указаны и папка, и видео. Загружаю видео.",
+    "status.dataset_or_video_required": "Нужно указать папку с изображениями или путь к видео.",
+    "status.dataset_required": "Нужно указать папку с изображениями.",
+    "status.loading_dataset": "Загрузка изображений...",
+    "status.failed_load_dataset": "Не удалось загрузить изображения: {error}",
+    "status.video_path_required": "Нужно указать путь к видео.",
+    "status.extracting_frames": "Извлекаю кадры из видео...",
+    "status.video_loaded": "Видео загружено. Размечайте кадры как изображения.",
+    "status.failed_load_video": "Не удалось загрузить видео: {error}",
+    "status.loading_image": "Загрузка изображения...",
+    "status.failed_load_image": "Не удалось загрузить изображение: {error}",
+    "status.no_unlabeled_found": "Нет изображений без разметки.",
+    "status.no_image_selected": "Изображение не выбрано.",
+    "status.running_auto_seg": "Автосегментация...",
+    "status.segmentation_complete": "Сегментация завершена: масок {count}. Проверьте список.",
+    "status.segmentation_failed": "Ошибка сегментации: {error}",
+    "status.add_points_first": "Добавьте точки.",
+    "status.need_positive_point": "Нужна хотя бы одна положительная точка.",
+    "status.sam2_required_select": "Нужен SAM 2. Выберите его в настройках сегментации.",
+    "status.sam2_yaml_required": "Нужен YAML-конфиг SAM 2.",
+    "status.sam2_model_required": "Нужен путь к модели SAM 2.",
+    "status.segmenting_points": "Сегментация по точкам...",
+    "status.no_masks_returned": "Маски не найдены.",
+    "status.failed_choose_primary": "Не удалось выбрать основную маску для уточнения.",
+    "status.mask_updated_points": "Маска обновлена по точкам. Можно добавить ещё точки.",
+    "status.added_masks_points": "Добавлено масок по точкам: {count}.",
+    "status.point_seg_failed": "Ошибка сегментации по точкам: {error}",
+    "status.load_video_first": "Сначала загрузите видео.",
+    "status.sam2_required": "Нужен SAM 2.",
+    "status.sam2_yaml_required_prop": "Нужен YAML-конфиг SAM 2 для распространения.",
+    "status.sam2_model_required_prop": "Нужен путь к модели SAM 2 для распространения.",
+    "status.propagating": "Распространяю маску по видео... это может занять время.",
+    "status.propagation_complete": "Распространение завершено: сохранено {saved}, ошибок {errors}.",
+    "status.propagation_failed": "Ошибка распространения: {error}",
+    "status.saving": "Сохранение...",
+    "status.save_failed": "Ошибка сохранения: {error}",
+    "status.nothing_to_save": "Нет изменений для сохранения.",
+    "status.batch_saving": "Пакетное сохранение: {count}...",
+    "status.batch_save_failed": "Ошибка пакетного сохранения: {error}",
+    "status.removed_unchecked_masks": "Удалено исключённых масок: {count}.",
+    "status.no_mask_selected_delete": "Не выбрана маска для удаления.",
+    "error.invalid_response": "Некорректный ответ: {text}",
+    "error.request_failed": "Ошибка запроса ({status})",
+    "error.failed_load_image": "Не удалось загрузить изображение.",
+  },
+};
+
+function formatTemplate(template, params) {
+  if (!params) {
+    return template;
+  }
+  return template.replace(/\{(\w+)\}/g, (match, key) => {
+    if (Object.prototype.hasOwnProperty.call(params, key)) {
+      return String(params[key]);
+    }
+    return match;
+  });
+}
+
+function tr(key, params = null) {
+  const lang = state.lang || "en";
+  const table = I18N[lang] || I18N.en;
+  const template = (table && table[key]) || (I18N.en && I18N.en[key]) || key;
+  return formatTemplate(template, params);
+}
+
+function applyI18nToDom() {
+  document.documentElement.lang = state.lang || "en";
+  document.title = tr("app.title");
+
+  document.querySelectorAll("[data-i18n]").forEach((node) => {
+    node.textContent = tr(node.dataset.i18n);
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((node) => {
+    node.placeholder = tr(node.dataset.i18nPlaceholder);
+  });
+  document.querySelectorAll("[data-i18n-html]").forEach((node) => {
+    node.innerHTML = tr(node.dataset.i18nHtml);
+  });
+}
+
+function setLanguage(lang, persist = true) {
+  const next = lang === "ru" ? "ru" : "en";
+  state.lang = next;
+  if (el.languageSelect) {
+    el.languageSelect.value = next;
+  }
+  if (persist) {
+    try {
+      localStorage.setItem(LANG_STORAGE_KEY, next);
+    } catch (_) {
+      // ignore storage errors
+    }
+  }
+  applyI18nToDom();
+  updatePointButtons();
+  updateVideoInfo();
+  refreshSegmentList();
+  if (state.picker.target && state.picker.lastData && el.pickerModal && !el.pickerModal.classList.contains("hidden")) {
+    renderPickerList(state.picker.lastData);
+  }
+  if (state.imagePath) {
+    updateStatusForCurrent();
+  } else {
+    setStatus(tr("status.initial"));
+  }
+}
+
+function initLanguage() {
+  let lang = null;
+  try {
+    lang = localStorage.getItem(LANG_STORAGE_KEY);
+  } catch (_) {
+    lang = null;
+  }
+  if (!lang) {
+    const nav = (navigator.languages && navigator.languages[0]) || navigator.language || "";
+    lang = nav.toLowerCase().startsWith("ru") ? "ru" : "en";
+  }
+  setLanguage(lang, false);
+  if (el.languageSelect) {
+    el.languageSelect.addEventListener("change", () => setLanguage(el.languageSelect.value, true));
+  }
+}
 
 function setStatus(message, isError = false) {
   el.statusBar.textContent = message;
@@ -118,13 +530,19 @@ function updateVideoInfo() {
     return;
   }
   if (!state.video.active || !state.video.info) {
-    el.videoInfo.textContent = "Video not loaded.";
+    el.videoInfo.textContent = tr("left.video_info.not_loaded");
     return;
   }
   const info = state.video.info;
   const fpsValue = Number.isFinite(info.fps) ? info.fps.toFixed(2) : "0.00";
   const frameCount = Number.isFinite(info.frame_count) ? info.frame_count : 0;
-  el.videoInfo.textContent = `Frames: ${frameCount} | FPS: ${fpsValue} | ${info.width}x${info.height} | stride ${info.stride}`;
+  el.videoInfo.textContent = tr("left.video_info.details", {
+    frameCount,
+    fps: fpsValue,
+    width: info.width,
+    height: info.height,
+    stride: info.stride,
+  });
 }
 
 function setMode(mode, videoInfo = null) {
@@ -142,14 +560,14 @@ function updatePointButtons() {
     return;
   }
   el.pointModeBtn.classList.toggle("btn-primary", state.points.active);
-  el.pointModeBtn.textContent = state.points.active ? "Point mode: ON" : "Point mode";
+  el.pointModeBtn.textContent = state.points.active ? tr("points.mode_on") : tr("points.mode");
 }
 
 function clearPoints(silent = false) {
   state.points.items = [];
   render();
   if (!silent && state.points.active) {
-    setStatus("Point mode: points cleared.");
+    setStatus(tr("status.point_mode_cleared"));
   }
 }
 
@@ -174,7 +592,7 @@ function togglePointMode() {
   refreshCanvasCursor();
   updatePointButtons();
   if (next) {
-    setStatus("Point mode: LMB adds, RMB removes.");
+    setStatus(tr("status.point_mode_help"));
   } else {
     updateStatusForCurrent();
   }
@@ -359,7 +777,7 @@ function onCanvasMouseDown(event) {
       if (edgeIndex >= 0) {
         pushHistoryForCurrent();
         insertVertex(state.selectedIndex, edgeIndex, imagePoint);
-        setStatus("Vertex inserted.");
+        setStatus(tr("status.vertex_inserted"));
         return;
       }
     }
@@ -368,7 +786,7 @@ function onCanvasMouseDown(event) {
       if (edgeIndex >= 0) {
         pushHistoryForCurrent();
         insertVertex(i, edgeIndex, imagePoint);
-        setStatus("Vertex inserted.");
+        setStatus(tr("status.vertex_inserted"));
         return;
       }
     }
@@ -503,7 +921,7 @@ function toggleDrawMode() {
   refreshCanvasCursor();
   render();
   if (state.draw.active) {
-    setStatus("Draw mode: click to add points; double click or Enter to finish.");
+    setStatus(tr("status.draw_mode_help"));
   } else {
     updateStatusForCurrent();
   }
@@ -544,9 +962,9 @@ function onKeyDown(event) {
     }
     event.preventDefault();
     if (undoCurrent()) {
-      setStatus("Undo applied.");
+      setStatus(tr("status.undo_applied"));
     } else {
-      setStatus("Nothing to undo.");
+      setStatus(tr("status.undo_none"));
     }
     return;
   }
@@ -632,9 +1050,10 @@ function selectPickerPath(path) {
 }
 
 function renderPickerList(data) {
+  state.picker.lastData = data;
   el.pickerList.innerHTML = "";
-  el.pickerPath.textContent = data.current_path || "Roots";
-  state.picker.currentPath = data.current_path && data.current_path !== "Roots" ? data.current_path : null;
+  el.pickerPath.textContent = data.current_path || tr("picker.roots");
+  state.picker.currentPath = data.current_path || null;
   state.picker.parentPath = data.parent_path || null;
 
   if (!state.picker.target) {
@@ -653,7 +1072,7 @@ function renderPickerList(data) {
     button.addEventListener("click", () => loadPickerPath(entry.path, config.mode));
     const tag = document.createElement("span");
     tag.className = "tag";
-    tag.textContent = "DIR";
+    tag.textContent = tr("picker.tag.dir");
     const name = document.createElement("span");
     name.className = "name";
     name.appendChild(button);
@@ -671,7 +1090,7 @@ function renderPickerList(data) {
     button.addEventListener("click", () => selectPickerPath(entry.path));
     const tag = document.createElement("span");
     tag.className = "tag";
-    tag.textContent = "FILE";
+    tag.textContent = tr("picker.tag.file");
     const name = document.createElement("span");
     name.className = "name";
     name.appendChild(button);
@@ -683,7 +1102,7 @@ function renderPickerList(data) {
   if (data.directories.length === 0 && data.files.length === 0) {
     const empty = document.createElement("li");
     empty.className = "picker-item";
-    empty.innerHTML = "<span class=\"name\">No files</span>";
+    empty.innerHTML = `<span class="name">${tr("picker.empty")}</span>`;
     el.pickerList.appendChild(empty);
   }
 }
@@ -692,13 +1111,13 @@ async function showPickerRoots() {
   try {
     const data = await apiJson("/api/fs/roots");
     renderPickerList({
-      current_path: "Roots",
+      current_path: "",
       parent_path: null,
       directories: (data.roots || []).map((path) => ({ name: path, path })),
       files: [],
     });
   } catch (error) {
-    setStatus(`Failed to load roots: ${error.message}`, true);
+    setStatus(tr("status.failed_load_roots", { error: error.message }), true);
   }
 }
 
@@ -707,7 +1126,7 @@ async function loadPickerPath(path, mode) {
     const data = await apiJson(`/api/fs/list?path=${encodeURIComponent(path)}&mode=${encodeURIComponent(mode)}`);
     renderPickerList(data);
   } catch (error) {
-    setStatus(`Failed to list path: ${error.message}`, true);
+    setStatus(tr("status.failed_list_path", { error: error.message }), true);
   }
 }
 
@@ -715,6 +1134,7 @@ function closePicker() {
   state.picker.target = null;
   state.picker.currentPath = null;
   state.picker.parentPath = null;
+  state.picker.lastData = null;
   setPickerVisible(false);
 }
 
@@ -724,7 +1144,7 @@ function openPicker(target) {
     return;
   }
   state.picker.target = target;
-  el.pickerTitle.textContent = config.title;
+  el.pickerTitle.textContent = tr(config.titleKey);
   setPickerVisible(true);
 
   const startPath = config.input.value.trim() || el.datasetDirInput.value.trim();
@@ -829,9 +1249,9 @@ resizeCanvas();
 updateZoomLabel();
 syncClassControls();
 refreshSegmentList();
+initLanguage();
 updatePointButtons();
 setMode("image");
-setStatus("Set a dataset folder or a video path, then click Load.");
 function refreshSegmentList() {
   el.boxList.innerHTML = "";
   state.segments.forEach((segment, index) => {
@@ -864,7 +1284,7 @@ function refreshSegmentList() {
 
     const subtitle = document.createElement("div");
     subtitle.className = "mask-subtitle";
-    subtitle.textContent = `Area ${Math.round(polygonArea(segment.points))} px`;
+    subtitle.textContent = tr("segment.area", { area: Math.round(polygonArea(segment.points)) });
 
     meta.appendChild(title);
     meta.appendChild(subtitle);
@@ -964,11 +1384,12 @@ async function apiJson(url, options = {}) {
     try {
       data = JSON.parse(text);
     } catch (error) {
-      throw new Error(`Invalid response: ${text}`);
+      throw new Error(tr("error.invalid_response", { text }));
     }
   }
   if (!response.ok) {
-    const detail = data && data.detail ? data.detail : `Request failed (${response.status})`;
+    const detail =
+      data && data.detail ? data.detail : tr("error.request_failed", { status: response.status });
     throw new Error(detail);
   }
   return data;
@@ -998,7 +1419,7 @@ async function applySessionData(data, mode = "image") {
   if (state.images.length > 0) {
     await loadImageByIndex(state.imageIndex);
   } else {
-    setStatus("No images found in the dataset.", true);
+    setStatus(tr("status.no_images_found"), true);
   }
 }
 
@@ -1006,7 +1427,7 @@ async function loadData() {
   const videoPath = el.videoPathInput.value.trim();
   const datasetDir = el.datasetDirInput.value.trim();
   if (videoPath && datasetDir) {
-    setStatus("Both dataset and video are set. Loading video.");
+    setStatus(tr("status.both_dataset_and_video"));
     return loadVideo();
   }
   if (videoPath) {
@@ -1015,13 +1436,13 @@ async function loadData() {
   if (datasetDir) {
     return loadSession();
   }
-  setStatus("Dataset folder or video path is required.", true);
+  setStatus(tr("status.dataset_or_video_required"), true);
 }
 
 async function loadSession() {
   const datasetDir = el.datasetDirInput.value.trim();
   if (!datasetDir) {
-    setStatus("Dataset path is required.", true);
+    setStatus(tr("status.dataset_required"), true);
     return;
   }
   const payload = {
@@ -1031,7 +1452,7 @@ async function loadSession() {
     model_path: el.modelPathInput.value.trim() || null,
     labels_dir: el.labelsDirInput.value.trim() || null,
   };
-  setStatus("Loading dataset...");
+  setStatus(tr("status.loading_dataset"));
   try {
     const data = await apiJson("/api/session", {
       method: "POST",
@@ -1040,14 +1461,14 @@ async function loadSession() {
     });
     await applySessionData(data, "image");
   } catch (error) {
-    setStatus(`Failed to load dataset: ${error.message}`, true);
+    setStatus(tr("status.failed_load_dataset", { error: error.message }), true);
   }
 }
 
 async function loadVideo() {
   const videoPath = el.videoPathInput.value.trim();
   if (!videoPath) {
-    setStatus("Video path is required.", true);
+    setStatus(tr("status.video_path_required"), true);
     return;
   }
   const payload = {
@@ -1058,7 +1479,7 @@ async function loadVideo() {
     classes: parseClassesFromInput(),
     classes_file: el.classesFileInput.value.trim() || null,
   };
-  setStatus("Extracting frames from video...");
+  setStatus(tr("status.extracting_frames"));
   try {
     const data = await apiJson("/api/video/session", {
       method: "POST",
@@ -1066,9 +1487,9 @@ async function loadVideo() {
       body: JSON.stringify(payload),
     });
     await applySessionData(data, "video");
-    setStatus("Video loaded. Use frames like images to annotate.");
+    setStatus(tr("status.video_loaded"));
   } catch (error) {
-    setStatus(`Failed to load video: ${error.message}`, true);
+    setStatus(tr("status.failed_load_video", { error: error.message }), true);
   }
 }
 
@@ -1096,7 +1517,7 @@ async function loadImageByIndex(index) {
     state.segments = deepCopySegments(cachedSegments);
     state.selectedIndex = -1;
     refreshSegmentList();
-    updateStatusForCurrent("cached");
+    updateStatusForCurrent(tr("status.extra.cached"));
     render();
   } else {
     state.segments = [];
@@ -1104,13 +1525,13 @@ async function loadImageByIndex(index) {
   }
 
   const token = ++state.loadToken;
-  setStatus("Loading image...");
+  setStatus(tr("status.loading_image"));
   try {
     const img = new Image();
     const imageUrl = `/api/image?path=${encodeURIComponent(state.imagePath)}`;
     await new Promise((resolve, reject) => {
       img.onload = resolve;
-      img.onerror = () => reject(new Error("Failed to load image."));
+      img.onerror = () => reject(new Error(tr("error.failed_load_image")));
       img.src = imageUrl;
     });
     if (token !== state.loadToken) {
@@ -1145,13 +1566,13 @@ async function loadImageByIndex(index) {
           updateCacheForCurrent(true);
           refreshSegmentList();
           render();
-          updateStatusForCurrent("copied from previous frame");
+          updateStatusForCurrent(tr("status.extra.copied_prev"));
           return;
         }
       }
-      updateStatusForCurrent("loaded");
+      updateStatusForCurrent(tr("status.extra.loaded"));
     } catch (error) {
-      setStatus(`Failed to load image: ${error.message}`, true);
+      setStatus(tr("status.failed_load_image", { error: error.message }), true);
     }
   }
 
@@ -1179,7 +1600,7 @@ function jumpToNextUnlabeled() {
       return;
     }
   }
-  setStatus("No unlabeled images found.");
+  setStatus(tr("status.no_unlabeled_found"));
 }
 
 function buildPredictPayload() {
@@ -1218,11 +1639,11 @@ function buildPredictPayload() {
 
 async function predictCurrentImage() {
   if (!state.imagePath) {
-    setStatus("No image selected.", true);
+    setStatus(tr("status.no_image_selected"), true);
     return;
   }
   const payload = buildPredictPayload();
-  setStatus("Running auto segmentation...");
+  setStatus(tr("status.running_auto_seg"));
   try {
     const data = await apiJson(`/api/predict?path=${encodeURIComponent(state.imagePath)}`, {
       method: "POST",
@@ -1250,35 +1671,35 @@ async function predictCurrentImage() {
     updateCacheForCurrent(true);
     refreshSegmentList();
     render();
-    setStatus(`Segmentation complete: masks ${state.segments.length}. Review the list.`);
+    setStatus(tr("status.segmentation_complete", { count: state.segments.length }));
   } catch (error) {
-    setStatus(`Segmentation failed: ${error.message}`, true);
+    setStatus(tr("status.segmentation_failed", { error: error.message }), true);
   }
 }
 
 async function segmentFromPoints() {
   if (!state.imagePath) {
-    setStatus("No image selected.", true);
+    setStatus(tr("status.no_image_selected"), true);
     return;
   }
   if (!state.points.items.length) {
-    setStatus("Add some points first.", true);
+    setStatus(tr("status.add_points_first"), true);
     return;
   }
   if (!state.points.items.some((point) => point.label === 1)) {
-    setStatus("Add at least one positive point.", true);
+    setStatus(tr("status.need_positive_point"), true);
     return;
   }
   if ((el.engineSelect.value || "sam") !== "sam2") {
-    setStatus("SAM 2 is required. Select it in the segmentation settings.", true);
+    setStatus(tr("status.sam2_required_select"), true);
     return;
   }
   if (!el.sam2ConfigInput.value.trim()) {
-    setStatus("SAM 2 YAML config is required.", true);
+    setStatus(tr("status.sam2_yaml_required"), true);
     return;
   }
   if (!el.modelPathInput.value.trim()) {
-    setStatus("SAM 2 model path is required.", true);
+    setStatus(tr("status.sam2_model_required"), true);
     return;
   }
 
@@ -1292,7 +1713,7 @@ async function segmentFromPoints() {
     payload.clear_old_points = true;
   }
 
-  setStatus("Segmenting from points...");
+  setStatus(tr("status.segmenting_points"));
   try {
     const data = await apiJson(url, {
       method: "POST",
@@ -1301,7 +1722,7 @@ async function segmentFromPoints() {
     });
     const predicted = normalizeSegments(data.segments || []);
     if (!predicted.length) {
-      setStatus("No masks returned.", true);
+      setStatus(tr("status.no_masks_returned"), true);
       return;
     }
     const refineMode = Boolean(el.refinePointsInput && el.refinePointsInput.checked);
@@ -1312,7 +1733,7 @@ async function segmentFromPoints() {
           : state.defaultClassId;
       const primary = pickLargestSegment(predicted);
       if (!primary) {
-        setStatus("Failed to choose a primary mask to refine.", true);
+        setStatus(tr("status.failed_choose_primary"), true);
         return;
       }
       primary.keep = true;
@@ -1327,7 +1748,7 @@ async function segmentFromPoints() {
       updateCacheForCurrent(true);
       refreshSegmentList();
       render();
-      setStatus("Mask updated from points. Add more points to refine.");
+      setStatus(tr("status.mask_updated_points"));
     } else {
       predicted.forEach((segment) => {
         segment.keep = true;
@@ -1340,28 +1761,28 @@ async function segmentFromPoints() {
       refreshSegmentList();
       render();
       clearPoints(true);
-      setStatus(`Added masks from points: ${predicted.length}.`);
+      setStatus(tr("status.added_masks_points", { count: predicted.length }));
     }
   } catch (error) {
-    setStatus(`Point segmentation failed: ${error.message}`, true);
+    setStatus(tr("status.point_seg_failed", { error: error.message }), true);
   }
 }
 
 async function propagateVideo() {
   if (state.mode !== "video") {
-    setStatus("Load a video first.", true);
+    setStatus(tr("status.load_video_first"), true);
     return;
   }
   if ((el.engineSelect.value || "sam") !== "sam2") {
-    setStatus("SAM 2 is required.", true);
+    setStatus(tr("status.sam2_required"), true);
     return;
   }
   if (!el.sam2ConfigInput.value.trim()) {
-    setStatus("SAM 2 YAML config is required for propagation.", true);
+    setStatus(tr("status.sam2_yaml_required_prop"), true);
     return;
   }
   if (!el.modelPathInput.value.trim()) {
-    setStatus("SAM 2 model path is required for propagation.", true);
+    setStatus(tr("status.sam2_model_required_prop"), true);
     return;
   }
   const payload = {
@@ -1378,7 +1799,7 @@ async function propagateVideo() {
   if (el.seedMaskForPropagateInput && el.seedMaskForPropagateInput.checked) {
     payload.seed_segments = toPayloadSegments(state.segments);
   }
-  setStatus("Propagating mask through video... this may take a while.");
+  setStatus(tr("status.propagating"));
   try {
     const data = await apiJson("/api/video/propagate", {
       method: "POST",
@@ -1390,9 +1811,9 @@ async function propagateVideo() {
     if (state.imageIndex >= 0) {
       await loadImageByIndex(state.imageIndex);
     }
-    setStatus(`Propagation complete: saved ${data.saved_count}, errors ${data.error_count}.`);
+    setStatus(tr("status.propagation_complete", { saved: data.saved_count, errors: data.error_count }));
   } catch (error) {
-    setStatus(`Propagation failed: ${error.message}`, true);
+    setStatus(tr("status.propagation_failed", { error: error.message }), true);
   }
 }
 
@@ -1408,14 +1829,14 @@ function toPayloadSegments(segments) {
 
 async function saveCurrentImage() {
   if (!state.imagePath) {
-    setStatus("No image selected.", true);
+    setStatus(tr("status.no_image_selected"), true);
     return;
   }
   const keptSegments = state.segments.filter((segment) => segment.keep !== false);
   const payload = {
     segments: toPayloadSegments(state.segments),
   };
-  setStatus("Saving...");
+  setStatus(tr("status.saving"));
   try {
     const result = await apiJson(`/api/annotations?path=${encodeURIComponent(state.imagePath)}`, {
       method: "POST",
@@ -1426,16 +1847,16 @@ async function saveCurrentImage() {
     updateCacheForCurrent(false);
     refreshSegmentList();
     render();
-    updateStatusForCurrent(`Saved to ${result.label_path}`);
+    updateStatusForCurrent(tr("status.extra.saved_to", { path: result.label_path }));
   } catch (error) {
-    setStatus(`Save failed: ${error.message}`, true);
+    setStatus(tr("status.save_failed", { error: error.message }), true);
   }
 }
 
 async function saveAllDirty() {
   const dirtyPaths = Array.from(state.dirtyPaths);
   if (dirtyPaths.length === 0) {
-    setStatus("Nothing to save.");
+    setStatus(tr("status.nothing_to_save"));
     return;
   }
   const keptByPath = {};
@@ -1449,7 +1870,7 @@ async function saveAllDirty() {
     refreshSegmentList();
     render();
   }
-  setStatus(`Batch saving: ${items.length}...`);
+  setStatus(tr("status.batch_saving", { count: items.length }));
   try {
     const result = await apiJson("/api/annotations/batch", {
       method: "POST",
@@ -1473,9 +1894,9 @@ async function saveAllDirty() {
       render();
     }
     state.dirty = state.dirtyPaths.has(state.imagePath);
-    updateStatusForCurrent(`Saved: ${result.saved_count}, errors ${result.error_count}`);
+    updateStatusForCurrent(tr("status.extra.saved_counts", { saved: result.saved_count, errors: result.error_count }));
   } catch (error) {
-    setStatus(`Batch save failed: ${error.message}`, true);
+    setStatus(tr("status.batch_save_failed", { error: error.message }), true);
   }
 }
 
@@ -1488,7 +1909,7 @@ function removeUncheckedSegments() {
     updateCacheForCurrent(true);
     refreshSegmentList();
     render();
-    setStatus(`Removed unchecked masks: ${before - state.segments.length}.`);
+    setStatus(tr("status.removed_unchecked_masks", { count: before - state.segments.length }));
   }
 }
 
@@ -1506,7 +1927,7 @@ function checkAllSegments() {
 
 function deleteSelectedSegment() {
   if (state.selectedIndex < 0 || state.selectedIndex >= state.segments.length) {
-    setStatus("No mask selected to delete.");
+    setStatus(tr("status.no_mask_selected_delete"));
     return;
   }
   pushHistoryForCurrent();
@@ -1641,11 +2062,20 @@ function updateStatusForCurrent(extra = "") {
   if (!state.imagePath) {
     return;
   }
-  const dirty = state.dirty ? " (unsaved)" : "";
+  const dirty = state.dirty ? tr("status.dirty_suffix") : "";
   const kept = countKeptSegments(state.segments);
   const tail = extra ? ` | ${extra}` : "";
   setStatus(
-    `${state.imagePath} | ${state.imageIndex + 1}/${state.images.length} | masks: ${state.segments.length} (kept ${kept})${dirty} | unsaved: ${state.dirtyPaths.size}${tail}`
+    tr("status.current", {
+      path: state.imagePath,
+      index: state.imageIndex + 1,
+      total: state.images.length,
+      count: state.segments.length,
+      kept,
+      dirty,
+      unsaved: state.dirtyPaths.size,
+      tail,
+    })
   );
 }
 
